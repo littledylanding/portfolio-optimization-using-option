@@ -13,15 +13,16 @@ def calMVSharpe(retForCal):
 
 
 res = []
-files = ['normal.csv', 'option_implied.csv']
+files = ['normal.csv']
 for f in files:
     data = pd.read_csv(f, index_col=0)
     data.index = pd.to_datetime(data.index)
-    turnover = data.iloc[-1]
+    turnover = data.iloc[-1].values[0]
     data = data.iloc[:-1]
-    total_ret = np.sum(data)
+    total_ret = np.sum(data).values[0]
     sharpe = calMVSharpe(data)
     res.append([total_ret, sharpe, turnover])
 res = pd.DataFrame(res)
 res.columns = ['total return', 'sharpe ratio', 'turnover']
-res.index = ['normal', 'option implied']
+res.index = ['normal']
+res.to_csv('result.csv')

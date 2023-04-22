@@ -1,6 +1,4 @@
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import cvxpy as cp
 
 
@@ -17,12 +15,11 @@ class mvp:
 
     def before(self, cov=None):
         data = self.price.iloc[self.day - self.rolling_period:self.day, :]
-        mean = data.mean.values
-        if self.type != 'Normal':
-            cov = data.cov.values
-        w = cp.Variable(len(self.price.columns), 1)
-        objective = cp.Minimize(w.T @ cov @ w)
-        constraints = [0 <= w, w <= 1]
+        if not cov:
+            cov = data.cov().values
+        w = cp.Variable(len(self.price.columns))
+        objective = cp.Minimize(cp.quad_form(w, cov))
+        constraints = [0 <= w, w <= 1, cp.sum(w) == 1]
         prob = cp.Problem(objective, constraints)
         prob.solve()
         if self.day != self.rolling_period:
@@ -32,11 +29,11 @@ class mvp:
 
     def after(self):
         data = self.price.iloc[self.day - self.rebalance:self.day + 1, :]
-        r = data.diff().values
-        r = r.dot(self.weights)
+        r = data.pct_change().dropna(axis=0).values
+        r = r[0].dot(self.weights)
         self.ret.append(r)
         self.day += self.rebalance
 
-    def start(self, cov):
+    def start(self, cov=None):
         self.before(cov)
-        self.after
+        self.after()
